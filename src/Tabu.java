@@ -1,3 +1,4 @@
+import java.awt.Point;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -30,7 +31,6 @@ public class Tabu {
     };
 
     private final int[][] tabuCountDepartment = new int[HEIGHT * WIDTH][HEIGHT * WIDTH];
-
 
     private final int[][] departmentLocations = {
             {1, 2, 3, 4, 5},
@@ -73,50 +73,23 @@ public class Tabu {
     }
 
     private void vanillaTabu() {
-        doLogic(5);
+        int cost = doLogic(5);
+        printStats(cost);
     }
 
-    private void doLogic(int tabuSize) {
+    private int doLogic(int tabuSize) {
         int iterations = 500;
         int currentCost = calculateCost();
         for (int i = 0; i < iterations; i++) {
             var candidates = generateCandidates(currentCost, tabuSize);
-            var bestCandidate = candidates.get(candidates.size() - 1);
-            var firstDepartment = bestCandidate.firstDepartment;
-            var secondDepartment = bestCandidate.secondDepartment;
-            int y1 = -1;
-            int x1 = -1;
-            int y2 = -1;
-            int x2 = -1;
-            for (int y = 0; y < HEIGHT; y++) {
-                for (int x = 0; x < WIDTH; x++) {
-                    if (departmentLocations[y][x] == firstDepartment) {
-                        y1 = y;
-                        x1 = x;
-                    }
-                    if (departmentLocations[y][x] == secondDepartment) {
-                        y2 = y;
-                        x2 = x;
-                    }
-                }
-            }
-            int tempDepartment = departmentLocations[y1][x1];
-            departmentLocations[y1][x1] = departmentLocations[y2][x2];
-            departmentLocations[y2][x2] = tempDepartment;
-            currentCost = calculateCost();
+            var usedCandidate = candidates.get(candidates.size() - 1);
+            var locationOne = localizeDepartment(usedCandidate.firstDepartment);
+            var locationTwo = localizeDepartment(usedCandidate.secondDepartment);
+            swapLocation(locationOne, locationTwo);
+            currentCost = usedCandidate.cost;
             decrementTabu();
         }
-        System.out.println("Cost = " + currentCost);
-        for (int y = 0; y < HEIGHT; y++) {
-            for (int x = 0; x < WIDTH; x++) {
-                int number = departmentLocations[y][x];
-                if (number < 10) {
-                    System.out.print(" ");
-                }
-                System.out.print(departmentLocations[y][x] + " ");
-            }
-            System.out.println();
-        }
+        return currentCost;
     }
 
     private int calculateCost() {
@@ -148,22 +121,25 @@ public class Tabu {
                         int firstDepartment = departmentLocations[y1][x1];
                         int secondDepartment = departmentLocations[y2][x2];
                         if (firstDepartment < secondDepartment) {
-                            // Temporarily swap the departments
-                            int temp = departmentLocations[y1][x1];
-                            departmentLocations[y1][x1] = departmentLocations[y2][x2];
-                            departmentLocations[y2][x2] = temp;
-                            // Get the cost
+                            var one = new Point(x1, y1);
+                            var two = new Point(x2, y2);
+                            swapLocation(one, two);
                             int cost = calculateCost();
                             int value = cost - currentCost;
-                            // Swap them back
-                            temp = departmentLocations[y1][x1];
-                            departmentLocations[y1][x1] = departmentLocations[y2][x2];
-                            departmentLocations[y2][x2] = temp;
-                            boolean satisfies = candidates.isEmpty() || value + tabuCountDepartment[secondDepartment - 1][firstDepartment - 1] < candidates.get(candidates.size() - 1).value + tabuCountDepartment[candidates.get(candidates.size() - 1).secondDepartment - 1][candidates.get(candidates.size() - 1).firstDepartment - 1];
-                            if (tabuCountDepartment[firstDepartment - 1][secondDepartment - 1] == 0 && satisfies) {
+                            swapLocation(one, two);
+                            int recency = tabuCountDepartment[firstDepartment - 1][secondDepartment - 1];
+                            boolean satisfies = candidates.isEmpty();
+                            if (!satisfies) {
+                                int frequency = tabuCountDepartment[secondDepartment - 1][firstDepartment - 1];
+                                var last = candidates.get(candidates.size() - 1);
+                                int candidateFrequency =
+                                        tabuCountDepartment[last.secondDepartment - 1][last.firstDepartment - 1];
+                                satisfies = value + frequency < last.value + candidateFrequency;
+                            }
+                            if (recency == 0 && satisfies) {
                                 var candidate = new Candidate(firstDepartment, secondDepartment, value, cost);
                                 candidates.add(candidate);
-                                tabuCountDepartment[firstDepartment - 1][secondDepartment - 1] = tabuSize;
+                                tabuCountDepartment[firstDepartment - 1][secondDepartment - 1] = tabuSize + 1;
                             }
                         }
                     }
@@ -173,6 +149,23 @@ public class Tabu {
         return candidates;
     }
 
+    private void swapLocation(Point one, Point two) {
+        int temp = departmentLocations[one.y][one.x];
+        departmentLocations[one.y][one.x] = departmentLocations[two.y][two.x];
+        departmentLocations[two.y][two.x] = temp;
+    }
+
+    private Point localizeDepartment(int department) {
+        for (int y = 0; y < HEIGHT; y++) {
+            for (int x = 0; x < WIDTH; x++) {
+                if (departmentLocations[y][x] == department) {
+                    return new Point(x, y);
+                }
+            }
+        }
+        throw new IllegalStateException("Department must exist");
+    }
+
     private void decrementTabu() {
         for (int y = 0; y < HEIGHT * WIDTH; y++) {
             for (int x = 0; x < HEIGHT * WIDTH; x++) {
@@ -180,6 +173,20 @@ public class Tabu {
                     tabuCountDepartment[y][x]--;
                 }
             }
+        }
+    }
+
+    private void printStats(int currentCost) {
+        System.out.println("Cost = " + currentCost);
+        for (int y = 0; y < HEIGHT; y++) {
+            for (int x = 0; x < WIDTH; x++) {
+                int number = departmentLocations[y][x];
+                if (number < 10) {
+                    System.out.print(" ");
+                }
+                System.out.print(departmentLocations[y][x] + " ");
+            }
+            System.out.println();
         }
     }
 }
