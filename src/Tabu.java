@@ -72,6 +72,53 @@ public class Tabu {
         tabu.vanillaTabu();
     }
 
+    private void vanillaTabu() {
+        doLogic(5);
+    }
+
+    private void doLogic(int tabuSize) {
+        int iterations = 500;
+        int currentCost = calculateCost();
+        for (int i = 0; i < iterations; i++) {
+            var candidates = generateCandidates(currentCost, tabuSize);
+            var bestCandidate = candidates.get(candidates.size() - 1);
+            var firstDepartment = bestCandidate.firstDepartment;
+            var secondDepartment = bestCandidate.secondDepartment;
+            int y1 = -1;
+            int x1 = -1;
+            int y2 = -1;
+            int x2 = -1;
+            for (int y = 0; y < HEIGHT; y++) {
+                for (int x = 0; x < WIDTH; x++) {
+                    if (departmentLocations[y][x] == firstDepartment) {
+                        y1 = y;
+                        x1 = x;
+                    }
+                    if (departmentLocations[y][x] == secondDepartment) {
+                        y2 = y;
+                        x2 = x;
+                    }
+                }
+            }
+            int tempDepartment = departmentLocations[y1][x1];
+            departmentLocations[y1][x1] = departmentLocations[y2][x2];
+            departmentLocations[y2][x2] = tempDepartment;
+            currentCost = calculateCost();
+            decrementTabu();
+        }
+        System.out.println("Cost = " + currentCost);
+        for (int y = 0; y < HEIGHT; y++) {
+            for (int x = 0; x < WIDTH; x++) {
+                int number = departmentLocations[y][x];
+                if (number < 10) {
+                    System.out.print(" ");
+                }
+                System.out.print(departmentLocations[y][x] + " ");
+            }
+            System.out.println();
+        }
+    }
+
     private int calculateCost() {
         int cost = 0;
         for (int y1 = 0; y1 < HEIGHT; y1++) {
@@ -134,43 +181,5 @@ public class Tabu {
                 }
             }
         }
-    }
-
-    private int doLogic(int tabuSize) {
-        int iterations = 500;
-        int currentCost = calculateCost();
-        for (int i = 0; i < iterations; i++) {
-            var candidates = generateCandidates(currentCost, tabuSize);
-            var bestCandidate = candidates.get(candidates.size() - 1);
-            var firstDepartment = bestCandidate.firstDepartment;
-            var secondDepartment = bestCandidate.secondDepartment;
-            int y1 = -1;
-            int x1 = -1;
-            int y2 = -1;
-            int x2 = -1;
-            for (int y = 0; y < HEIGHT; y++) {
-                for (int x = 0; x < WIDTH; x++) {
-                    if (departmentLocations[y][x] == firstDepartment) {
-                        y1 = y;
-                        x1 = x;
-                    }
-                    if (departmentLocations[y][x] == secondDepartment) {
-                        y2 = y;
-                        x2 = x;
-                    }
-                }
-            }
-            int tempDepartment = departmentLocations[y1][x1];
-            departmentLocations[y1][x1] = departmentLocations[y2][x2];
-            departmentLocations[y2][x2] = tempDepartment;
-            currentCost = calculateCost();
-            decrementTabu();
-        }
-        return currentCost;
-    }
-
-    private void vanillaTabu() {
-        int cost = doLogic(5);
-        System.out.println(cost);
     }
 }
