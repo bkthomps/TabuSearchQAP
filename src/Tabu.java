@@ -65,6 +65,8 @@ public class Tabu {
         var tabu = new Tabu();
         tabu.vanillaTabu();
         var best = tabu.changingStarting();
+        tabu.changeTabuListSize(best);
+        tabu.dynamicListSize();
     }
 
     private void vanillaTabu() {
@@ -74,7 +76,7 @@ public class Tabu {
                 {11, 12, 13, 14, 15},
                 {16, 17, 18, 19, 20}
         };
-        int cost = doLogic(5);
+        int cost = doLogic(5, 5);
         System.out.println("Vanilla cost = " + cost);
         System.out.println();
     }
@@ -82,7 +84,7 @@ public class Tabu {
     private int[][] changingStarting() {
         int bestCost = Integer.MAX_VALUE;
         int[][] best = departmentLocations;
-        for (int i = 0; i < 10; i++) {
+        for (int i = 0; i < 30; i++) {
             Integer[] arr = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20};
             var list = new ArrayList<>(Arrays.asList(arr));
             Collections.shuffle(list);
@@ -90,7 +92,7 @@ public class Tabu {
                 departmentLocations[j / WIDTH][j % WIDTH] = list.get(j);
             }
             var backup = departmentLocations.clone();
-            int cost = doLogic(5);
+            int cost = doLogic(5, 5);
             System.out.println("Random initial starting cost = " + cost);
             if (cost < bestCost) {
                 bestCost = cost;
@@ -103,10 +105,36 @@ public class Tabu {
         return best;
     }
 
-    private int doLogic(int tabuSize) {
+    private void changeTabuListSize(int[][] best) {
+        departmentLocations = best;
+        int minCost = Integer.MAX_VALUE;
+        int listSize = -1;
+        for (int i = 1; i < 20; i++) {
+            int cost = doLogic(i, i);
+            if (cost < minCost) {
+                minCost = cost;
+                listSize = i;
+            }
+            System.out.println("List size = " + i + ", cost = " + cost);
+        }
+        System.out.println("Best list size is " + listSize + ", with cost " + minCost);
+        System.out.println();
+    }
+
+    private void dynamicListSize() {
+        int cost = doLogic(3, 7);
+        System.out.println("With a dynamic list size the cost is " + cost);
+        System.out.println();
+    }
+
+    private int doLogic(int tabuMinSize, int tabuMaxSize) {
         int iterations = 500;
         int currentCost = calculateCost();
         for (int i = 0; i < iterations; i++) {
+            int tabuSize = tabuMinSize;
+            if (tabuMinSize != tabuMaxSize && i % 25 == 0) {
+                tabuSize = tabuMinSize + (int) ((tabuMaxSize - tabuMinSize + 1) * Math.random());
+            }
             var candidates = generateCandidates(currentCost, tabuSize);
             var usedCandidate = candidates.get(candidates.size() - 1);
             var locationOne = localizeDepartment(usedCandidate.firstDepartment);
