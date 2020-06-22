@@ -68,6 +68,7 @@ public class Tabu {
         tabu.changeTabuListSize(best);
         tabu.dynamicListSize();
         tabu.aspiration();
+        tabu.partialNeighborhood();
     }
 
     private void vanillaTabu() {
@@ -77,7 +78,7 @@ public class Tabu {
                 {11, 12, 13, 14, 15},
                 {16, 17, 18, 19, 20}
         };
-        int cost = doLogic(5, 5, false);
+        int cost = doLogic(5, 5, false, false);
         System.out.println("Vanilla cost = " + cost);
         System.out.println();
     }
@@ -93,7 +94,7 @@ public class Tabu {
                 departmentLocations[j / WIDTH][j % WIDTH] = list.get(j);
             }
             var backup = departmentLocations.clone();
-            int cost = doLogic(5, 5, false);
+            int cost = doLogic(5, 5, false, false);
             System.out.println("Random initial starting cost = " + cost);
             if (cost < bestCost) {
                 bestCost = cost;
@@ -111,7 +112,7 @@ public class Tabu {
         int minCost = Integer.MAX_VALUE;
         int listSize = -1;
         for (int i = 1; i < 20; i++) {
-            int cost = doLogic(i, i, false);
+            int cost = doLogic(i, i, false, false);
             if (cost < minCost) {
                 minCost = cost;
                 listSize = i;
@@ -123,18 +124,24 @@ public class Tabu {
     }
 
     private void dynamicListSize() {
-        int cost = doLogic(3, 7, false);
+        int cost = doLogic(3, 7, false, false);
         System.out.println("With a dynamic list size the cost is " + cost);
         System.out.println();
     }
 
     private void aspiration() {
-        int cost = doLogic(3, 7, true);
+        int cost = doLogic(3, 7, true, false);
         System.out.println("With aspiration the cost is " + cost);
         System.out.println();
     }
 
-    private int doLogic(int tabuMinSize, int tabuMaxSize, boolean isAspiration) {
+    private void partialNeighborhood() {
+        int cost = doLogic(3, 7, true, true);
+        System.out.println("With partial neighborhood the cost is " + cost);
+        System.out.println();
+    }
+
+    private int doLogic(int tabuMinSize, int tabuMaxSize, boolean isAspiration, boolean partialNeighborhood) {
         int iterations = 500;
         int currentCost = calculateCost();
         var bestCandidate = isAspiration ? new Candidate(0, 0, 0, Integer.MAX_VALUE) : null;
@@ -143,7 +150,7 @@ public class Tabu {
             if (tabuMinSize != tabuMaxSize && i % 25 == 0) {
                 tabuSize = tabuMinSize + (int) ((tabuMaxSize - tabuMinSize + 1) * Math.random());
             }
-            var candidates = generateCandidates(currentCost, tabuSize, bestCandidate);
+            var candidates = generateCandidates(currentCost, tabuSize, bestCandidate, partialNeighborhood);
             var currentCandidate = candidates.get(candidates.size() - 1);
             if (isAspiration && currentCandidate.cost < bestCandidate.cost) {
                 bestCandidate = currentCandidate;
@@ -177,12 +184,13 @@ public class Tabu {
         return cost;
     }
 
-    private List<Candidate> generateCandidates(int currentCost, int tabuSize, Candidate best) {
+    private List<Candidate> generateCandidates(int currentCost, int tabuSize, Candidate best,
+                                               boolean partialNeighborhood) {
         var candidates = new ArrayList<Candidate>();
         for (int y1 = 0; y1 < HEIGHT; y1++) {
             for (int x1 = 0; x1 < WIDTH; x1++) {
-                for (int y2 = 0; y2 < HEIGHT; y2++) {
-                    for (int x2 = 0; x2 < WIDTH; x2++) {
+                for (int y2 = 0; y2 < (partialNeighborhood ? HEIGHT * Math.random() : HEIGHT); y2++) {
+                    for (int x2 = 0; x2 < (partialNeighborhood ? WIDTH * Math.random() : WIDTH); x2++) {
                         int firstDepartment = departmentLocations[y1][x1];
                         int secondDepartment = departmentLocations[y2][x2];
                         if (firstDepartment < secondDepartment) {
