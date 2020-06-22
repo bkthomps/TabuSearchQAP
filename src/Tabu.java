@@ -1,6 +1,5 @@
 import java.awt.Point;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 public class Tabu {
 
@@ -32,12 +31,7 @@ public class Tabu {
 
     private final int[][] tabuCountDepartment = new int[HEIGHT * WIDTH][HEIGHT * WIDTH];
 
-    private final int[][] departmentLocations = {
-            {1, 2, 3, 4, 5},
-            {6, 7, 8, 9, 10},
-            {11, 12, 13, 14, 15},
-            {16, 17, 18, 19, 20}
-    };
+    private int[][] departmentLocations;
 
     private static class Candidate {
         private int firstDepartment;
@@ -70,11 +64,43 @@ public class Tabu {
     public static void main(String[] args) {
         var tabu = new Tabu();
         tabu.vanillaTabu();
+        var best = tabu.changingStarting();
     }
 
     private void vanillaTabu() {
+        departmentLocations = new int[][]{
+                {1, 2, 3, 4, 5},
+                {6, 7, 8, 9, 10},
+                {11, 12, 13, 14, 15},
+                {16, 17, 18, 19, 20}
+        };
         int cost = doLogic(5);
-        printStats(cost);
+        System.out.println("Vanilla cost = " + cost);
+        System.out.println();
+    }
+
+    private int[][] changingStarting() {
+        int bestCost = Integer.MAX_VALUE;
+        int[][] best = departmentLocations;
+        for (int i = 0; i < 10; i++) {
+            Integer[] arr = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20};
+            var list = new ArrayList<>(Arrays.asList(arr));
+            Collections.shuffle(list);
+            for (int j = 0; j < arr.length; j++) {
+                departmentLocations[j / WIDTH][j % WIDTH] = list.get(j);
+            }
+            var backup = departmentLocations.clone();
+            int cost = doLogic(5);
+            System.out.println("Random initial starting cost = " + cost);
+            if (cost < bestCost) {
+                bestCost = cost;
+                best = backup;
+            }
+        }
+        System.out.println("The best cost is " + bestCost + ", with grid: ");
+        printGrid(best);
+        System.out.println();
+        return best;
     }
 
     private int doLogic(int tabuSize) {
@@ -176,15 +202,14 @@ public class Tabu {
         }
     }
 
-    private void printStats(int currentCost) {
-        System.out.println("Cost = " + currentCost);
+    private void printGrid(int[][] locations) {
         for (int y = 0; y < HEIGHT; y++) {
             for (int x = 0; x < WIDTH; x++) {
-                int number = departmentLocations[y][x];
+                int number = locations[y][x];
                 if (number < 10) {
                     System.out.print(" ");
                 }
-                System.out.print(departmentLocations[y][x] + " ");
+                System.out.print(locations[y][x] + " ");
             }
             System.out.println();
         }
