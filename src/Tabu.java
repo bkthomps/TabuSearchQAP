@@ -69,6 +69,7 @@ public class Tabu {
         tabu.dynamicListSize();
         tabu.aspiration();
         tabu.partialNeighborhood();
+        tabu.frequencyBased();
     }
 
     private void vanillaTabu() {
@@ -78,7 +79,7 @@ public class Tabu {
                 {11, 12, 13, 14, 15},
                 {16, 17, 18, 19, 20}
         };
-        int cost = doLogic(5, 5, false, false);
+        int cost = doLogic(5, 5, false, false, false);
         System.out.println("Vanilla cost = " + cost);
         System.out.println();
     }
@@ -94,7 +95,7 @@ public class Tabu {
                 departmentLocations[j / WIDTH][j % WIDTH] = list.get(j);
             }
             var backup = departmentLocations.clone();
-            int cost = doLogic(5, 5, false, false);
+            int cost = doLogic(5, 5, false, false, false);
             System.out.println("Random initial starting cost = " + cost);
             if (cost < bestCost) {
                 bestCost = cost;
@@ -112,7 +113,7 @@ public class Tabu {
         int minCost = Integer.MAX_VALUE;
         int listSize = -1;
         for (int i = 1; i < 20; i++) {
-            int cost = doLogic(i, i, false, false);
+            int cost = doLogic(i, i, false, false, false);
             if (cost < minCost) {
                 minCost = cost;
                 listSize = i;
@@ -124,24 +125,31 @@ public class Tabu {
     }
 
     private void dynamicListSize() {
-        int cost = doLogic(3, 7, false, false);
+        int cost = doLogic(3, 7, false, false, false);
         System.out.println("With a dynamic list size the cost is " + cost);
         System.out.println();
     }
 
     private void aspiration() {
-        int cost = doLogic(3, 7, true, false);
+        int cost = doLogic(3, 7, true, false, false);
         System.out.println("With aspiration the cost is " + cost);
         System.out.println();
     }
 
     private void partialNeighborhood() {
-        int cost = doLogic(3, 7, true, true);
+        int cost = doLogic(3, 7, true, true, false);
         System.out.println("With partial neighborhood the cost is " + cost);
         System.out.println();
     }
 
-    private int doLogic(int tabuMinSize, int tabuMaxSize, boolean isAspiration, boolean partialNeighborhood) {
+    private void frequencyBased() {
+        int cost = doLogic(3, 7, true, false, true);
+        System.out.println("With frequency based the cost is " + cost);
+        System.out.println();
+    }
+
+    private int doLogic(int tabuMinSize, int tabuMaxSize, boolean isAspiration, boolean partialNeighborhood,
+                        boolean isFrequency) {
         int iterations = 500;
         int currentCost = calculateCost();
         var bestCandidate = isAspiration ? new Candidate(0, 0, 0, Integer.MAX_VALUE) : null;
@@ -150,7 +158,7 @@ public class Tabu {
             if (tabuMinSize != tabuMaxSize && i % 25 == 0) {
                 tabuSize = tabuMinSize + (int) ((tabuMaxSize - tabuMinSize + 1) * Math.random());
             }
-            var candidates = generateCandidates(currentCost, tabuSize, bestCandidate, partialNeighborhood);
+            var candidates = generateCandidates(currentCost, tabuSize, bestCandidate, partialNeighborhood, isFrequency);
             var currentCandidate = candidates.get(candidates.size() - 1);
             if (isAspiration && currentCandidate.cost < bestCandidate.cost) {
                 bestCandidate = currentCandidate;
@@ -185,7 +193,7 @@ public class Tabu {
     }
 
     private List<Candidate> generateCandidates(int currentCost, int tabuSize, Candidate best,
-                                               boolean partialNeighborhood) {
+                                               boolean partialNeighborhood, boolean isFrequency) {
         var candidates = new ArrayList<Candidate>();
         for (int y1 = 0; y1 < HEIGHT; y1++) {
             for (int x1 = 0; x1 < WIDTH; x1++) {
@@ -213,6 +221,9 @@ public class Tabu {
                             if ((recency == 0 && satisfies) || (recency < 5 && candidate.equals(best))) {
                                 candidates.add(candidate);
                                 tabuCountDepartment[firstDepartment - 1][secondDepartment - 1] = tabuSize + 1;
+                                if (isFrequency) {
+                                    tabuCountDepartment[secondDepartment - 1][firstDepartment - 1] += 2;
+                                }
                             }
                         }
                     }
