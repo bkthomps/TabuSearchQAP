@@ -1,8 +1,9 @@
+package tabusearchqap;
+
 import java.awt.Point;
 import java.util.*;
 
-public class Tabu {
-
+public class TabuSearchQAP {
     private static final int HEIGHT = 4;
     private static final int WIDTH = 5;
 
@@ -30,10 +31,10 @@ public class Tabu {
     };
 
     private static class Candidate {
-        private int firstDepartment;
-        private int secondDepartment;
-        private int value;
-        private int cost;
+        private final int firstDepartment;
+        private final int secondDepartment;
+        private final int value;
+        private final int cost;
 
         Candidate(int firstDepartment, int secondDepartment, int value, int cost) {
             this.firstDepartment = firstDepartment;
@@ -58,7 +59,7 @@ public class Tabu {
     }
 
     public static void main(String[] args) {
-        var tabu = new Tabu();
+        var tabu = new TabuSearchQAP();
         tabu.vanillaTabu();
         var best = tabu.changingStarting();
         tabu.changeTabuListSize(best.clone());
